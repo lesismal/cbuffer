@@ -5,6 +5,7 @@ package cbuffer
 */
 import "C"
 import (
+	"runtime"
 	"unsafe"
 )
 
@@ -27,6 +28,12 @@ func (a *Allocator) Malloc(size int) []byte {
 		cap:   size,
 	}
 	*((*_slice)(unsafe.Pointer(ptr))) = s
+	runtime.SetFinalizer(ptr, func(p *[]byte) {
+		s := _slice{}
+		ptr := &s
+		*ptr = *((*_slice)(unsafe.Pointer(p)))
+		C.free(ptr.array)
+	})
 	return b
 }
 
@@ -53,10 +60,10 @@ func (a *Allocator) AppendString(buf []byte, more string) []byte {
 }
 
 func (a *Allocator) Free(buf []byte) {
-	s := _slice{}
-	ptr := &s
-	*ptr = *((*_slice)(unsafe.Pointer(&buf)))
-	C.free(ptr.array)
+	// s := _slice{}
+	// ptr := &s
+	// *ptr = *((*_slice)(unsafe.Pointer(&buf)))
+	// C.free(ptr.array)
 }
 
 func Malloc(size int) []byte {
